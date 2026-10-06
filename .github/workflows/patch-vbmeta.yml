@@ -2,19 +2,18 @@ name: Patch vbmeta for disable verification
 
 on:
   workflow_dispatch:
-    inputs:
-      vbmeta_link:
-        description: 'Enter the Direct Download Link (.img / .lz4 / .zip / .tar):'
-        required: true   
-              
+
+permissions:
+  contents: write
+           
 jobs:
   patch-recovery-revived:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write    
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@main
         with:
           fetch-depth: 1
 
@@ -25,12 +24,13 @@ jobs:
 
       - name: Running patch-recovery-revived
         run: |
-          bash vbmeta.sh "${{ github.event.inputs.vbmeta_link }}"
+          bash vbmeta.sh
       
-      - name: Uploading Artifact
-        uses: actions/upload-artifact@v4
+      - name: Create release
+        uses: ncipollo/release-action@main
         with:
-          name: "Patched-disabled-vbmeta"
-          path: |
-            output/*.tar
-            output/*.img
+          tag: "${{ github.run_id }}"
+          name: Patched-disabled-vbmeta
+          artifacts: output/*.img
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
