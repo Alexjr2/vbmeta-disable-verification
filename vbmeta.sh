@@ -1,56 +1,47 @@
 #!/bin/bash
 
 ##################################################
-# vbmeta Verification Disabler Scripts
-# made by @ravindu644 & @GoRhanHee & LLM AI Model
+# vbmeta Verification Disabler Script
 ##################################################
-
-shopt -s expand_aliases
 set -e
 
-export WDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-mkdir -p "recovery" "output" "log"
+WDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-: > "${WDIR}/log/vbmeta_log.txt"
+init_requirements() {
+    echo "[INFO] Checking requirements..."
 
-init_requirements(){
-    echo -e "[INFO] Checking requirements..."
-    if ! command -v python3 &> /dev/null; then
-        sudo apt update && sudo apt install -y python3
+    if ! command -v python3 >/dev/null 2>&1; then
+        sudo apt update
+        sudo apt install -y python3
     fi
-    
-    if [ ! -f "${WDIR}/patch-vbmeta.py" ]; then
-        echo -e "[ERROR] patch-vbmeta.py file not found in ${WDIR}"
+
+    if [ ! -f "$WDIR/patch-vbmeta.py" ]; then
+        echo "[ERROR] patch-vbmeta.py file not found in $WDIR"
         exit 1
     fi
-}
 
-process_vbmeta(){
-    mv vbmeta.img "${WDIR}/recovery/"
-    cd "${WDIR}/recovery/"
-    
-    local FILE=$(ls)
-    [[ "$FILE" == *.zip ]] && unzip "$FILE" && rm "$FILE"
-    [[ "$FILE" == *.lz4 ]] && lz4 -d "$FILE" "${FILE%.lz4}" && rm "$FILE"
-    [[ "$FILE" == *.tar ]] && tar -xf "$FILE" && rm "$FILE"
-
-    if [ -f "vbmeta.img" ]; then
-        export TARGET_VBMETA="$(pwd)/vbmeta.img"
-    else
-        echo -e "[ERROR] vbmeta.img not found."
+    if [ ! -f "$WDIR/vbmeta.img" ]; then
+        echo "[ERROR] vbmeta.img not found in $WDIR"
         exit 1
     fi
-    
-    echo -e "[INFO] Patching vbmeta.img..."
-    python3 "${WDIR}/patch-vbmeta.py" "${TARGET_VBMETA}" >> "${WDIR}/log/vbmeta_log.txt" 2>&1
-    
-    cp "${TARGET_VBMETA}" "${WDIR}/output/vbmeta.img"
-    cd "${WDIR}/"
+
+    mkdir -p "$WDIR/recovery" "$WDIR/output"
 }
 
-cleanup(){
-    rm -rf "${WDIR}/recovery/"*
-    echo -e "[INFO] Cleanup complete."
+process_vbmeta() {
+    mv "$WDIR/vbmeta.img" "$WDIR/recovery/vbmeta.img"
+
+    local target="$WDIR/recovery/vbmeta.img"
+
+    echo "[INFO] Patching vbmeta.img..."
+    python3 "$WDIR/patch-vbmeta.py" "$target"
+
+    cp "$target" "$WDIR/output/vbmeta.img"
+}
+
+cleanup() {
+    rm -f "$WDIR/recovery/vbmeta.img"
+    echo "[INFO] Cleanup complete."
 }
 
 init_requirements
